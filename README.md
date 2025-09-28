@@ -6,19 +6,19 @@ Each node is, in fact, a structure in which are retained:
 - what are its inputs (their identifiers)
 - what is the node identifier (node_number)
 
-circuit_nodes = the number of nodes in the circuit - it increases with each new node created, initially being 0
-nr_inputs = number of inputs in the circuit (leaves)
-output_node_number = the root of the circuit read from the file
+- circuit_nodes = the number of nodes in the circuit - it increases with each new node created, initially being 0
+- nr_inputs = number of inputs in the circuit (leaves)
+- output_node_number = the root of the circuit read from the file
 
 I used the Tseitin discount which I will explain below. Variables used:
-tseitin_root_number = the root of a new tree built by transforming Tseitin based on the initial one
-tseitin_nr_inputs = the number of inputs of the new tree
+- tseitin_root_number = the root of a new tree built by transforming Tseitin based on the initial one
+- tseitin_nr_inputs = the number of inputs of the new tree
 
 The nodes in the circuit are kept in the form of a tree.
 In the implementation of this theme, I worked more with the node identifiers (node_number) in the circuit, than with the actual nodes.
 
 Steps implemented:
-
+--
      1. traversing the input file, reading and processing the data, building the circuit
     
      2. Simplifying the circuit by applying Morgan's laws and deleting redundant gates.
