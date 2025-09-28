@@ -1,5 +1,3 @@
-// README
-
 Each node is kept in a empty array of nodes, where at its index is node i from the circuit.
 
 Each node is, in fact, a structure in which are retained:
