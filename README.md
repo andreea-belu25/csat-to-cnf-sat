@@ -1,10 +1,10 @@
 Each node is kept in a empty array of nodes, where at its index is node i from the circuit.
 
 Each node is, in fact, a structure in which are retained:
-     - the logical operation specific to the node ("AND", "OR", "NOT or "" - leaf node)
-     - the number of inputs for the node
-     - what are its inputs (their identifiers)
-     - what is the node identifier (node_number)
+- the logical operation specific to the node ("AND", "OR", "NOT or "" - leaf node)
+- the number of inputs for the node
+- what are its inputs (their identifiers)
+- what is the node identifier (node_number)
 
 circuit_nodes = the number of nodes in the circuit - it increases with each new node created, initially being 0
 nr_inputs = number of inputs in the circuit (leaves)
