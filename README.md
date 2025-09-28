@@ -7,6 +7,8 @@ Each node is, in fact, a structure in which are retained:
 - what is the node identifier (node_number)
 
 ----
+Relevant variables used:
+---
 - circuit_nodes = the number of nodes in the circuit - it increases with each new node created, initially being 0
 - nr_inputs = number of inputs in the circuit (leaves)
 - output_node_number = the root of the circuit read from the file
