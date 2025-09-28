@@ -463,7 +463,7 @@ void dimacs(char *output_file)
     fclose(output);
 }
 
-// Deallocate allocated memory
+// Deallocate memory
 void deallocate_memory(void)
 {
     for (int index = 0; index < circuit_nodes; index++) {
