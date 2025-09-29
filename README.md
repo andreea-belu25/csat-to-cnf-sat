@@ -1,97 +1,87 @@
-Each node is kept in a empty array of nodes, where at its index is node i from the circuit.
+# Circuit Simplification and SAT Conversion Implementation
+Implementation of logic circuit simplification using De Morgan's laws and conversion to CNF (Conjunctive Normal Form) using Tseitin transformation.
 
-Each node is, in fact, a structure in which are retained:
-- the logical operation specific to the node ("AND", "OR", "NOT or "" - leaf node)
-- the number of inputs for the node
-- what are its inputs (their identifiers)
-- what is the node identifier (node_number)
+## 1. Data Structures Used
 
-----
-Relevant variables used:
----
-- circuit_nodes = the number of nodes in the circuit - it increases with each new node created, initially being 0
-- nr_inputs = number of inputs in the circuit (leaves)
-- output_node_number = the root of the circuit read from the file
+### Node Structure
+- **Logical operation**: Type of gate ("AND", "OR", "NOT", or "" for leaf nodes)
+- **Number of inputs**: How many inputs the node has
+- **Input identifiers**: List of node identifiers that are inputs to this node
+- **Node identifier**: Unique number identifying the node (node_number)
 
-I used the Tseitin discount which I will explain below. Variables used:
-- tseitin_root_number = the root of a new tree built by transforming Tseitin based on the initial one
-- tseitin_nr_inputs = the number of inputs of the new tree
+### Circuit Representation
+- **circuit_nodes**: Total number of nodes in the circuit (increases with each new node created)
+- **nr_inputs**: Number of input nodes (leaves) in the circuit
+- **output_node_number**: Root node of the original circuit
+- **Node array**: Nodes stored in array where index corresponds to node identifier
 
-The nodes in the circuit are kept in the form of a tree.
-In the implementation of this theme, I worked more with the node identifiers (node_number) in the circuit, than with the actual nodes.
+### Tseitin Variables
+- **tseitin_root_number**: Root of the transformed circuit after Tseitin transformation
+- **tseitin_nr_inputs**: Number of inputs in the transformed circuit
 
-Steps implemented:
---
-     1. traversing the input file, reading and processing the data, building the circuit
-    
-     2. Simplifying the circuit by applying Morgan's laws and deleting redundant gates.
-         Morgan's Laws:
+## 2. Implementation Logic
 
-             1. two NOTs cancel each other. We know that a NOT is guaranteed to have only one input => this input will not be modified.
-                 Because the NOTs cancel => we can get rid of these two gates, taking the input of the second NOT
-                 as input for the gate that had as input the first NOT. Here there is the possibility that the first NOT is the output
-                 the circuit, in which case the root of the circuit will change.
+### Step 1: Reading and Building Circuit
+**File parsing and circuit construction**:
+- Reads input file containing circuit description
+- Creates nodes for each gate (AND, OR, NOT) and leaf (input variable)
+- Builds tree structure by storing node identifiers and their connections
+- Identifies root node (output) and leaf nodes (inputs)
 
-             2. !(a || b) = !a && !b
-                 a new AND gate is created
-                 for each input of the OR gate, a NOT gate is created that has as input, the input of the OR gate
-                 the two NOTs created become inputs for the AND gate created
-                 the OR gate is disconnected from the circuit, and the created AND gate appears in its place
+### Step 2: Circuit Simplification
+**De Morgan's Laws** (applied recursively):
+- **Double NOT elimination**: `NOT(NOT(a)) = a`
+  - Two consecutive NOTs cancel each other
+  - Input of second NOT becomes input to parent gate of first NOT
+  - Updates circuit root if first NOT was the output
+  
+- **NOT-OR transformation**: `NOT(a OR b) = NOT(a) AND NOT(b)`
+  - Creates new AND gate
+  - Creates NOT gate for each input of OR gate
+  - NOT gates become inputs to new AND gate
+  - Replaces OR gate with AND gate in circuit
+  
+- **NOT-AND transformation**: `NOT(a AND b) = NOT(a) OR NOT(b)`
+  - Creates new OR gate
+  - Creates NOT gate for each input of AND gate
+  - NOT gates become inputs to new OR gate
+  - Replaces AND gate with OR gate in circuit
 
-             3. !(a && b) = !a || b
-                 a new OR gate is created
-                 for each input of the AND gate, a NOT gate is created that has as input the input of the AND gate
-                 the two created NOTs become inputs for the created OR gate
-                 the AND gate is disconnected from the circuit, and the created OR gate appears in its place
+**Redundant Gate Elimination** (applied recursively):
+- **Nested AND simplification**: `x1 AND (x2 AND x3 AND (x4 AND x5)) = x1 AND x2 AND x3 AND x4 AND x5`
+  - Flattens nested AND gates into single multi-input AND gate
+  
+- **Nested OR simplification**: `x1 OR (x2 OR x3 OR (x4 OR x5)) = x1 OR x2 OR x3 OR x4 OR x5`
+  - Flattens nested OR gates into single multi-input OR gate
 
-             Morgan's laws are applied recursively throughout the circuit.
+### Step 3: Tseitin Transformation
+**Converting to CNF for SAT solving**:
+- Creates equisatisfiable circuit (satisfiability preserved)
+- Creates new AND gate as root of transformed circuit
+- Processes circuit from leaves to original root
 
-         Deleting redundant ports, a process also carried out recursively:
-             x1 && (x2 && x3 && (x4 && x5)) = x1 && (x2 && x3 && x4 && x5) = x1 && x2 && x3 && x4 && x5
-             x1 || (x2 || x3 || (x4 || x5)) = x1 || (x2 || x3 || x4 || x5) = x1 || x2 || x3 || x4 || x5
+**Transformation rules**:
 
-     3. Distributivity is achieved with the help of the Tseitin transformation
-         -- description link: https://profs.info.uaic.ro/~stefan.ciobaca/logic-2018-2019/notes7.pdf) --
-         It has been demonstrated that if I reach an equisatisfactory circuit, the circuit from which I started is also satisfactory.
+**NOT gate** (`NOT(b)`): `NOT(b) = (NOT(a) OR NOT(b)) AND (a OR b)` where `a = NOT_gate_id`
+- Creates two NOT gates for inputs
+- Creates first OR gate with both NOT gates as inputs
+- Creates second OR gate with original variables as inputs
+- Both OR gates become inputs to root AND gate
 
-         I create an AND gate which is the new root of the circuit.
-         the circuit from the leaves to the root is processed
+**AND gate** (`b AND c`): `(b AND c) = (NOT(a) OR b) AND (NOT(a) OR c) AND (a OR NOT(b) OR NOT(c))` where `a = AND_gate_id`
+- **Third clause**: Creates OR gate with NOT gates for each input of AND gate, plus gate identifier
+- **First two clauses**: For each input, creates NOT gate for AND gate identifier, creates OR gate with NOT and current input
+- All OR gates become inputs to root AND gate
 
-         1. !b => (!a || !b) && (a || b), a = NOT gate number
-             I create two NOT gates like this:
-             one is the input of a, and the other is the input of b => it is added to the inputs of the two nodes
-             I create an OR gate that is input for the created root
-             to the or gate I add as input the two previously created NOT gates
+**OR gate** (`b OR c`): `(b OR c) = (a OR NOT(b)) AND (a OR NOT(c)) AND (NOT(a) OR b OR c)` where `a = OR_gate_id`
+- **Third clause**: Creates OR gate with NOT of gate identifier plus all inputs of OR gate
+- **First two clauses**: For each input, creates NOT gate for that input, creates OR gate with NOT and gate identifier
+- All OR gates become inputs to root AND gate
 
-             I create an OR gate that has a and b as inputs
-             this gate becomes the input for the root and created previously
-
-         2. (b && c) = (!a || b) && (!a || c) && (a || !b || !c), a = number of gates and
-             for the last bracket:
-             a gate is created or
-             for each input of the a gate, a NOT gate is created which becomes the input for the or gate
-             and each input becomes input for the created NOT gate
-             this OR gate becomes the input for the root of the newly created tree
-
-             for the first two brackets:
-             a NOT gate is created that has an AND gate as input
-             an OR gate is created that has as inputs the NOT gate and the current input
-             the OR gate becomes the input for the root of the tree
-
-         3. (b || c) => (a || !b) && (a || !c) && (!a || b || c), where a = number of OR gates
-             for the last bracket:
-             an OR gate is created
-             for gate a, a NOT gate is created whose input is gate a
-             the newly created NOT gate and the inputs of gate a (b and c) become inputs for the created OR gate
-             this OR gate becomes the input for the root of the newly created tree
-
-             for the first two brackets:
-             for each input of gates a, a NOT gate is created that has as input the current input of gate a
-             an OR gate is created that has as inputs the NOT gate of the current input and the current node
-             the OR gate becomes the input for the root of the tree
-
-     4. Display in the file:
-         After the Tseitin transformation: we will have the AND root with leaves or OR gates as inputs, if we meet:
-             - leaves, they are displayed directly in the file
-             - if we encounter OR gates => we must go through their neighbors which are either NOT gates or leaves
-             - the leaves are displayed directly, and the NOT gate input is displayed with a minus in front
+### Step 4: Output Generation
+**Writing CNF to file**:
+- Root is AND gate with OR gates as inputs (CNF format)
+- For each OR clause (input to root AND):
+  - **Leaf nodes**: Written directly as positive literals
+  - **NOT gates**: Input written as negative literal (with minus sign)
+  - **OR gates**: Recursively processes inputs (leaves or NOT gates)
